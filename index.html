@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>看山是山，看山不是山，看山还是山 · 创作轨迹陪跑</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #f6f7f9; --card: #fff; --border: #e5e8ef; --border-hi: #c9d6e8;
+    --text: #1a2129; --text-2: #4e5969; --text-3: #86909c;
+    --pri: #0584ff; --pri-soft: #e8f3ff; --pri-deep: #0470e0;
+    --up: #f53f3f; --up-soft: #ffece8;
+    --down: #00b42a; --down-soft: #e8ffea;
+    --warn: #ff7d00; --warn-soft: #fff3e8;
+    --low: #86909c; --low-soft: #f2f3f5;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+  }
+  .container { max-width: 1060px; margin: 0 auto; padding: 0 20px 90px; }
+
+  /* ===== 顶栏 ===== */
+  header { background: #fff; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
+  .nav { max-width: 1060px; margin: 0 auto; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand .mtn { font-size: 15px; letter-spacing: -2px; color: var(--pri); line-height: 1; }
+  .brand .name { font-size: 16px; font-weight: 800; }
+  .brand .name small { font-weight: 400; color: var(--text-3); font-size: 11px; margin-left: 8px; }
+  .steps { display: flex; gap: 6px; font-size: 12px; color: var(--text-3); align-items: center; }
+  .step { display: flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 16px; border: 1px solid var(--border); background: #fff; cursor: pointer; }
+  .step .dot { width: 17px; height: 17px; border-radius: 50%; background: var(--border); color: var(--text-3); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }
+  .step.active { border-color: var(--pri); color: var(--pri); background: var(--pri-soft); }
+  .step.active .dot { background: var(--pri); color: #fff; }
+  .step.done .dot { background: var(--pri-soft); color: var(--pri); }
+  .step.disabled { opacity: .45; cursor: not-allowed; }
+
+  /* ===== 兜底横幅 ===== */
+  .banner { display: none; align-items: center; gap: 10px; margin-top: 16px; padding: 12px 16px; border-radius: 10px; font-size: 13px; }
+  .banner.show { display: flex; }
+  .banner .icon { font-size: 17px; }
+  .banner .retry { margin-left: auto; border: 1px solid var(--warn); color: var(--warn); background: #fff; padding: 4px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .banner.warn { background: var(--warn-soft); border: 1px solid #ffd6ad; color: #a65300; }
+
+  /* ===== 屏幕通用 ===== */
+  .screen { display: none; padding-top: 40px; }
+  .screen.current { display: block; animation: fadein .3s; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+  .scr-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .scr-title { font-size: 21px; font-weight: 700; }
+  .scr-tag { font-size: 11px; color: var(--pri); background: var(--pri-soft); padding: 3px 10px; border-radius: 12px; }
+  .scr-sub { font-size: 12px; color: var(--text-3); }
+
+  /* ===== 屏1 授权 ===== */
+  .hero { text-align: center; margin-bottom: 26px; }
+  .hero .mtn { font-size: 30px; letter-spacing: -5px; color: var(--pri); }
+  .hero h1 { font-size: 26px; font-weight: 800; margin: 6px 0 8px; letter-spacing: .5px; }
+  .hero p { color: var(--text-2); font-size: 14px; line-height: 1.7; }
+  .hero p b { color: var(--pri); }
+
+  .quote { background: #fff; border: 1px solid var(--border); border-left: 4px solid var(--pri); border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; }
+  .quote .q { font-size: 14px; line-height: 1.8; color: var(--text); }
+  .quote .who { font-size: 12px; color: var(--text-3); margin-top: 8px; }
+  .quote .ans { font-size: 12px; color: var(--pri); margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+
+  .tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+  .tier { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .tier .tt { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .tier .lv { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+  .tier.m .lv { background: var(--pri-soft); color: var(--pri); }
+  .tier.w .lv { background: var(--up-soft); color: var(--up); }
+  .tier.d .lv { background: var(--down-soft); color: var(--down); }
+  .tier .tt b { font-size: 14px; }
+  .tier .q { font-size: 12px; color: var(--pri); margin-bottom: 8px; font-weight: 600; }
+  .tier ul { list-style: none; }
+  .tier li { font-size: 11px; color: var(--text-2); padding: 2px 0; }
+  .tier li::before { content: "·"; margin-right: 6px; color: var(--text-3); }
+  .tier .drill { margin-top: 10px; font-size: 11px; color: var(--text-3); border-top: 1px dashed var(--border); padding-top: 8px; }
+
+  .values { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 26px; }
+  .val { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 12px; text-align: center; }
+  .val .a { font-size: 11px; color: var(--text-3); }
+  .val .b { font-size: 13px; font-weight: 700; color: var(--text); margin-top: 4px; }
+  .val .b em { font-style: normal; color: var(--pri); }
+
+  .authcard { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 34px; max-width: 620px; margin: 0 auto; text-align: center; }
+  .authcard .desc { font-size: 15px; line-height: 1.8; color: var(--text-2); margin-bottom: 24px; }
+  .authcard .desc b { color: var(--text); }
+  .authbtn { width: 100%; padding: 14px; border: none; border-radius: 10px; cursor: pointer; background: var(--pri); color: #fff; font-size: 16px; font-weight: 700; }
+  .authbtn:hover { background: var(--pri-deep); }
+  .authbtn:disabled { opacity: .6; cursor: not-allowed; }
+  .authsub { margin-top: 14px; font-size: 12px; color: var(--text-3); }
+  .authsub a { color: var(--pri); cursor: pointer; text-decoration: underline; }
+  .authpts { margin: 20px auto 0; padding-top: 18px; border-top: 1px dashed var(--border); max-width: 420px; text-align: left; }
+  .authpts li { list-style: none; font-size: 12px; color: var(--text-2); padding: 4px 0; display: flex; gap: 8px; }
+  .authpts li::before { content: "✓"; color: var(--down); font-weight: 700; }
+
+  .loading { text-align: center; padding: 110px 0; }
+  .spin { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--pri); border-radius: 50%; margin: 0 auto 16px; animation: rot .8s linear infinite; }
+  @keyframes rot { to { transform: rotate(360deg); } }
+  .loading p { color: var(--text-2); font-size: 14px; }
+
+  /* ===== 屏2 三档时间轴 ===== */
+  .tiernav { display: flex; align-items: center; gap: 6px; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 6px; margin-bottom: 16px; }
+  .tbtn { flex: 1; text-align: center; padding: 9px 6px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; transition: all .15s; }
+  .tbtn .n { font-size: 13px; font-weight: 700; }
+  .tbtn .s { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+  .tbtn:hover { background: var(--bg); }
+  .tbtn.on { background: var(--pri-soft); border-color: rgba(5,132,255,.35); }
+  .tbtn.on .n { color: var(--pri); }
+  .tbtn.on .s { color: var(--pri); opacity: .8; }
+  .tiernav .flow { color: var(--text-3); font-size: 14px; padding: 0 2px; }
+  .tview { display: none; }
+  .tview.on { display: block; animation: fadein .25s; }
+
+  .metrow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  .mcell { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 13px 15px; }
+  .mcell .k { font-size: 11px; color: var(--text-3); margin-bottom: 5px; }
+  .mcell .v { font-size: 19px; font-weight: 700; }
+  .mcell .v small { font-size: 11px; font-weight: 400; color: var(--text-3); }
+  .mcell .v.up { color: var(--up); }
+  .mcell .v.down { color: var(--down); }
+  .mcell .v.pri { color: var(--pri); }
+
+  .tlcard { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 22px 20px 16px; }
+  .tl-tools { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px; }
+  .lgd { display: flex; gap: 14px; font-size: 11px; color: var(--text-2); flex-wrap: wrap; }
+  .lgd i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; }
+  .lgd .u { background: var(--up); }
+  .lgd .d { background: var(--down); }
+  .lgd .a { background: #fff; border: 2px solid var(--warn); width: 7px; height: 7px; }
+
+  .tl-scroll { overflow-x: auto; }
+  .tl { position: relative; min-width: 900px; height: 190px; }
+  .tl .axis { position: absolute; left: 0; right: 0; top: 78px; height: 2px; background: var(--border-hi); }
+  .pt { position: absolute; top: 78px; transform: translate(-50%, -50%); cursor: pointer; z-index: 3; text-align: center; }
+  .pt .pd { width: 15px; height: 15px; border-radius: 50%; margin: 0 auto; border: 3px solid #fff; box-shadow: 0 0 0 1px var(--border-hi); transition: transform .15s; }
+  .pt.up .pd { background: var(--up); }
+  .pt.down .pd { background: var(--down); }
+  .pt.anom .pd { background: #fff; border: 3px solid var(--warn); box-shadow: 0 0 0 2px var(--warn-soft); }
+  .pt:hover .pd { transform: scale(1.4); }
+  .pt .pv { position: absolute; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .pt.up .pv { bottom: 24px; color: var(--up); }
+  .pt.down .pv { top: 24px; color: var(--down); }
+  .pt.anom .pv { top: 26px; color: var(--warn); font-size: 10px; }
+  .pt .ptd { position: absolute; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--text-3); white-space: nowrap; }
+  .pt.up .ptd { top: 24px; }
+  .pt.down .ptd { bottom: 24px; }
+  .pt.anom .ptd { bottom: 26px; color: var(--warn); }
+  .pt .badge { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 10px; background: var(--warn-soft); color: var(--warn); border: 1px solid #ffd6ad; padding: 2px 7px; border-radius: 8px; font-weight: 600; }
+  .pt.anom .badge { top: auto; bottom: -40px; }
+
+  .weekchips { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+  .weekchips .lbl { font-size: 11px; color: var(--text-3); }
+  .wchip { font-size: 11px; border: 1px solid var(--border); background: var(--bg); border-radius: 14px; padding: 5px 12px; cursor: pointer; color: var(--text-2); }
+  .wchip:hover { border-color: var(--pri); color: var(--pri); }
+  .wchip.hot { background: var(--pri-soft); border-color: rgba(5,132,255,.4); color: var(--pri); font-weight: 600; }
+
+  .mlist { margin-top: 14px; border-top: 1px dashed var(--border); padding-top: 12px; }
+  .mrow { display: flex; gap: 10px; padding: 5px 0; font-size: 12px; }
+  .mrow .mk { min-width: 108px; color: var(--text-3); }
+  .mrow .mv { color: var(--text-2); flex: 1; }
+  .mrow .mv b { color: var(--text); }
+  .mrow .mv .best { color: var(--up); font-weight: 700; }
+  .mrow .mv .worst { color: var(--down); font-weight: 700; }
+
+  /* 周度卡 */
+  .dayrow { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 14px; }
+  .dcell { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 12px 8px; text-align: center; position: relative; min-height: 108px; }
+  .dcell .dw { font-size: 11px; color: var(--text-3); }
+  .dcell .dd { font-size: 12px; font-weight: 700; margin: 3px 0 8px; }
+  .dcell .dv { font-size: 15px; font-weight: 700; }
+  .dcell .dv.up { color: var(--up); }
+  .dcell .dv.down { color: var(--down); }
+  .dcell .dv.flat { color: var(--text-3); font-size: 13px; }
+  .dcell .dc { font-size: 10px; color: var(--text-3); margin-top: 5px; line-height: 1.5; }
+  .dcell.plan { border-style: dashed; background: #fbfcfd; }
+  .dcell.plan .dv { color: var(--pri); font-size: 12px; font-weight: 600; }
+  .dcell.click { cursor: pointer; border-color: rgba(5,132,255,.5); background: var(--pri-soft); }
+  .dcell.click:hover { border-color: var(--pri); }
+  .dcell .drilltag { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); font-size: 9px; background: var(--pri); color: #fff; padding: 2px 8px; border-radius: 8px; font-weight: 600; white-space: nowrap; }
+
+  .wkmet { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .wkmet .mrow .mk { min-width: 128px; }
+
+  /* 日度卡 */
+  .dayhead { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .dayhead .t { font-size: 15px; font-weight: 700; }
+  .dayhead .z { font-size: 12px; color: var(--text-3); }
+  .dayhead .sum { font-size: 20px; font-weight: 800; color: var(--up); }
+
+  .h24card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 24px 20px 18px; margin-bottom: 14px; }
+  .h24 { position: relative; min-width: 760px; height: 150px; }
+  .h24 .track { position: absolute; left: 0; right: 0; top: 68px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--border) 0%, var(--pri-soft) 35%, var(--pri) 60%, var(--pri-soft) 100%); }
+  .h24 .hour { position: absolute; top: 84px; font-size: 10px; color: var(--text-3); transform: translateX(-50%); }
+  .hnode { position: absolute; top: 68px; transform: translate(-50%, -50%); text-align: center; z-index: 3; }
+  .hnode .nd { width: 13px; height: 13px; border-radius: 50%; margin: 0 auto; border: 3px solid #fff; }
+  .hnode.pub .nd { background: var(--pri); box-shadow: 0 0 0 1px var(--pri); }
+  .hnode.hit .nd { background: var(--down); box-shadow: 0 0 0 1px var(--down); }
+  .hnode.peak .nd { background: var(--warn); box-shadow: 0 0 0 1px var(--warn); }
+  .hnode.act .nd { background: #fff; border: 3px solid var(--text-3); }
+  .hnode .nt { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; }
+  .hnode .nt.top { bottom: 24px; }
+  .hnode .nt.bot { top: 24px; }
+  .hnode .nt .nm { font-size: 11px; font-weight: 700; color: var(--text); }
+  .hnode .nt .nl { font-size: 10px; color: var(--text-3); }
+  .hnode .nt .ng { font-size: 11px; font-weight: 700; }
+  .hnode .nt .ng.up { color: var(--up); }
+  .hnode .nt .ng.wn { color: var(--warn); }
+  .hnode .nt .st { display: inline-block; font-size: 9px; padding: 1px 6px; border-radius: 8px; margin-top: 2px; font-weight: 600; }
+  .hnode .nt .st.ok { background: var(--down-soft); color: var(--down); }
+  .hnode .nt .st.run { background: var(--warn-soft); color: var(--warn); }
+  .h24 .now { position: absolute; top: 30px; bottom: 30px; width: 2px; background: var(--up); z-index: 2; }
+  .h24 .now .tag { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--up); font-weight: 700; white-space: nowrap; }
+
+  .dagrid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; }
+  .dacard { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .dacard .dt { font-size: 12px; font-weight: 700; color: var(--pri); margin-bottom: 10px; }
+  .attr-line { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px dashed var(--border); font-size: 13px; flex-wrap: wrap; }
+  .attr-line:last-child { border-bottom: none; }
+  .conf { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+  .conf.hi { background: var(--down-soft); color: var(--down); }
+  .conf.mid { background: var(--warn-soft); color: var(--warn); }
+  .conf.lo { background: var(--low-soft); color: var(--low); }
+  .actbtns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .abtn { padding: 10px 6px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); text-align: center; cursor: pointer; font-size: 12px; color: var(--text-2); }
+  .abtn b { display: block; font-size: 13px; color: var(--text); margin-bottom: 3px; }
+  .abtn.rec { border-color: var(--pri); background: var(--pri-soft); }
+  .abtn.rec b { color: var(--pri); }
+  .abtn .why { font-size: 10px; color: var(--text-3); margin-top: 3px; line-height: 1.4; }
+
+  .nextbtn { display: block; margin: 24px auto 0; padding: 12px 44px; border: none; border-radius: 10px; background: var(--pri); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .nextbtn:hover { background: var(--pri-deep); }
+
+  /* 弹窗 */
+  .mask { display: none; position: fixed; inset: 0; background: rgba(29,33,41,.5); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+  .mask.show { display: flex; }
+  .modal { background: #fff; border-radius: 14px; width: 100%; max-width: 470px; padding: 26px; animation: pop .18s; box-shadow: 0 16px 48px rgba(29,33,41,.25); }
+  @keyframes pop { from { transform: scale(.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .xclose { float: right; border: none; background: var(--bg); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 13px; color: var(--text-2); }
+  .mdate { font-size: 11px; color: var(--text-3); margin-top: 10px; }
+  .mtitle { font-size: 16px; font-weight: 700; margin: 6px 0 4px; line-height: 1.5; padding-right: 28px; }
+  .mconf-row { margin-bottom: 14px; }
+  .mgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .mcell2 { background: var(--bg); border-radius: 9px; padding: 11px 13px; }
+  .mcell2 .k { font-size: 10px; color: var(--text-3); margin-bottom: 4px; }
+  .mcell2 .v { font-size: 15px; font-weight: 700; }
+  .mcell2 .v.up { color: var(--up); }
+  .mcell2 .v.down { color: var(--down); }
+  .mcell2 .v.flat { color: var(--warn); font-size: 13px; }
+  .mcell2.full { grid-column: 1 / -1; }
+  .mcell2 .v.txt { font-weight: 500; font-size: 12.5px; line-height: 1.7; color: var(--text-2); }
+  .mcell2 .v.adv { font-weight: 500; font-size: 12.5px; line-height: 1.7; color: var(--pri); }
+  .anomnote { margin-top: 12px; font-size: 11px; color: var(--warn); background: var(--warn-soft); border-radius: 8px; padding: 9px 12px; line-height: 1.6; }
+
+  /* ===== 屏3 ===== */
+  .goal2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .gcard { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
+  .gt { font-size: 12px; font-weight: 700; color: var(--pri); margin-bottom: 12px; }
+  .gmain { font-size: 18px; font-weight: 800; line-height: 1.4; }
+  .gsub { font-size: 12px; color: var(--text-3); margin-top: 5px; }
+  .pnum { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 9px; }
+  .pnow { font-size: 27px; font-weight: 800; }
+  .pnow b { color: var(--pri); font-size: 16px; }
+  .ptgt { font-size: 12px; color: var(--text-3); }
+  .ptgt b { color: var(--text-2); }
+  .pbar { height: 10px; background: var(--bg); border-radius: 5px; overflow: hidden; margin-bottom: 10px; }
+  .pfill { height: 100%; width: 0; background: linear-gradient(90deg, var(--pri), #67b0ff); border-radius: 5px; transition: width 1s ease; }
+  .pnote { font-size: 12px; color: var(--text-2); line-height: 1.8; }
+  .pnote b { color: var(--warn); }
+
+  .acts { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
+  .acts .hd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .acts .hint { font-size: 11px; color: var(--text-3); }
+  .aitem { display: flex; gap: 14px; padding: 15px 0; border-bottom: 1px dashed var(--border); }
+  .aitem:last-child { border-bottom: none; padding-bottom: 2px; }
+  .aitem:first-of-type { padding-top: 2px; }
+  .abadge { flex-shrink: 0; width: 52px; height: 52px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; }
+  .abadge .p { font-size: 13px; }
+  .abadge .l { font-size: 9px; font-weight: 600; opacity: .85; }
+  .abadge.p0 { background: var(--up-soft); color: var(--up); }
+  .abadge.p1 { background: var(--warn-soft); color: var(--warn); }
+  .abadge.p2 { background: var(--pri-soft); color: var(--pri); }
+  .abody { flex: 1; }
+  .atitle { font-size: 14.5px; font-weight: 700; margin-bottom: 6px; line-height: 1.5; }
+  .ameta { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11px; color: var(--text-3); margin-bottom: 7px; }
+  .ameta b { color: var(--pri); }
+  .adesc { font-size: 12.5px; color: var(--text-2); line-height: 1.7; }
+  .abasis { margin-top: 9px; font-size: 11px; color: var(--text-3); border-top: 1px dashed var(--border); padding-top: 8px; line-height: 1.6; }
+  .abasis::before { content: "依据："; color: var(--pri); font-weight: 600; }
+
+  .empty { text-align: center; padding: 70px 20px; background: #fff; border: 1px solid var(--border); border-radius: 14px; }
+  .empty .ic { font-size: 46px; margin-bottom: 14px; }
+  .empty .t { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .empty .d { font-size: 13px; color: var(--text-3); line-height: 1.8; }
+
+  /* 演示控制台 */
+  .dcon { position: fixed; right: 16px; bottom: 16px; z-index: 90; }
+  .dtog { background: #1a2129; color: #fff; border: none; padding: 9px 16px; border-radius: 18px; cursor: pointer; font-size: 12px; }
+  .dpan { display: none; background: #fff; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 30px rgba(29,33,41,.18); padding: 13px; margin-bottom: 8px; width: 205px; }
+  .dpan.show { display: block; }
+  .dpan .pt2 { font-size: 11px; font-weight: 700; color: var(--text-3); margin-bottom: 8px; letter-spacing: 1px; }
+  .dpan button { display: block; width: 100%; margin-bottom: 6px; padding: 7px 10px; text-align: left; border: 1px solid var(--border); background: var(--bg); border-radius: 8px; cursor: pointer; font-size: 12px; color: var(--text-2); }
+  .dpan button:hover { border-color: var(--pri); color: var(--pri); }
+  .dpan button.on { background: var(--pri-soft); border-color: var(--pri); color: var(--pri); font-weight: 600; }
+
+  footer { text-align: center; padding: 34px 0 14px; font-size: 11px; color: var(--text-3); line-height: 1.8; }
+  footer b { color: var(--pri); }
+
+  @media (max-width: 760px) {
+    .steps { display: none; }
+    .tiers, .values, .metrow, .dayrow, .dagrid, .goal2 { grid-template-columns: 1fr 1fr; }
+    .dayrow { overflow-x: auto; grid-template-columns: repeat(7, 90px); }
+    .actbtns { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 20px; }
+    .authcard, .tlcard, .gcard, .acts, .wkmet, .h24card, .dacard { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <div class="brand">
+      <div class="mtn">▲▲▲</div>
+      <div class="name">看山是山<small>看山不是山 · 看山还是山 — 月/周/日三档创作轨迹陪跑</small></div>
+    </div>
+    <div class="steps" id="steps">
+      <div class="step active" data-step="1"><span class="dot">1</span>授权</div>
+      <div class="step disabled" data-step="2"><span class="dot">2</span>轨迹</div>
+      <div class="step disabled" data-step="3"><span class="dot">3</span>建议</div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="banner warn" id="banner">
+    <span class="icon" id="bicon">⚠️</span>
+    <span id="btext"></span>
+    <button class="retry" id="bretry" style="display:none" onclick="retryLoad()">重试</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ============ 屏1 授权引导 ============ -->
+  <section class="screen current" id="scr1">
+    <div class="hero">
+      <div class="mtn">▲ ▲ ▲</div>
+      <h1>看山是山，看山不是山，看山还是山</h1>
+      <p>看山告诉你「涨了」，我们告诉你<b>「为什么」</b>和<b>「下一步怎么办」</b><br>不替你写，只陪跑复盘 · 月 / 周 / 日 三档时间轴全覆盖</p>
+    </div>
+
+    <div class="quote">
+      <div class="q">「看山告诉我涨了 40%，没告诉我为什么——那天我其实什么都没做。」</div>
+      <div class="who">—— 蒋平 · 跨领域拆解者 · 本产品重点调研对象</div>
+      <div class="ans">我们的回答：打开日度卡 → 点开那个 +40% 的点 → 归因卡显示「无发布动作 → 外部因素，不硬编原因 · 可信度低」→ 附下一步建议。三步闭环。</div>
+    </div>
+
+    <div class="tiers">
+      <div class="tier m">
+        <div class="tt"><span class="lv">战略层</span><b>月度卡 · Month</b></div>
+        <div class="q">这月偏没偏目标？</div>
+        <ul>
+          <li>目标对齐分（0-100）</li>
+          <li>风格稳定性指数</li>
+          <li>最有效动作 Top3 / 最差 / 最佳</li>
+          <li>下月方向调整</li>
+        </ul>
+        <div class="drill">下钻：点开某一周 →</div>
+      </div>
+      <div class="tier w">
+        <div class="tt"><span class="lv">战术层</span><b>周度卡 · Week</b></div>
+        <div class="q">这周节奏对不对？</div>
+        <ul>
+          <li>7 天日卡片（哪天涨/跌）</li>
+          <li>本周表现最好的一天</li>
+          <li>撞题预警 Top3</li>
+          <li>下周发布节奏建议</li>
+        </ul>
+        <div class="drill">下钻：点开某一天 →</div>
+      </div>
+      <div class="tier d">
+        <div class="tt"><span class="lv">执行层</span><b>日度卡 · Day</b></div>
+        <div class="q">今天这篇怎么办？</div>
+        <ul>
+          <li>24 小时时间线</li>
+          <li>关键分发节点（10:00 早班车 / 14:00 二次分发 / 20:00 晚间高峰）</li>
+          <li>实时归因（涨跌+原因）</li>
+          <li>实时下一步（追加/互动/放弃）</li>
+        </ul>
+        <div class="drill">发布后 1-2h 关键窗口陪跑</div>
+      </div>
+    </div>
+
+    <div class="values">
+      <div class="val"><div class="a">判断偏没偏目标</div><div class="b">15 分钟 → <em>10 秒</em></div></div>
+      <div class="val"><div class="a">完整月度复盘</div><div class="b">30-45 分钟 → <em>1 分钟</em></div></div>
+      <div class="val"><div class="a">撞题风险排查</div><div class="b">15 分钟 → <em>3 秒</em></div></div>
+      <div class="val"><div class="a">发布后陪跑</div><div class="b">无解 → <em>24h 全程</em></div></div>
+    </div>
+
+    <div class="authcard">
+      <p class="desc">授权后我们能读取你的创作数据，<br>为你生成<b>月 / 周 / 日 三档校准轨迹</b>。</p>
+      <button class="authbtn" id="authbtn" onclick="startAuth()">授权知乎账号，生成我的三档轨迹</button>
+      <div class="authsub">演示模式：<a onclick="startAuth()">不授权，直接看演示数据</a></div>
+      <ul class="authpts">
+        <li>只读取创作数据（发布记录 / 涨跌 / 互动数）</li>
+        <li>不代你发布内容，不修改任何账号设置</li>
+        <li>授权随时可在知乎账号设置中撤销</li>
+        <li>密钥只存后端，不进前端代码 / 网址 / 日志 / 截图</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 加载中 ============ -->
+  <section class="screen" id="scrload">
+    <div class="loading">
+      <div class="spin"></div>
+      <p id="loadtxt">正在通过 OAuth 读取创作数据…</p>
+    </div>
+  </section>
+
+  <!-- ============ 屏2 三档时间轴 ============ -->
+  <section class="screen" id="scr2">
+    <div class="scr-head" id="tl-head">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+        <div class="scr-title">创作轨迹时间轴</div>
+        <span class="scr-tag" id="tier-tag">月度卡 · 战略层</span>
+      </div>
+      <div class="scr-sub" id="tl-range"></div>
+    </div>
+
+    <!-- 三档切换 -->
+    <div class="tiernav" id="tiernav">
+      <div class="tbtn on" data-tier="m" onclick="setTier('m')"><div class="n">月度卡</div><div class="s">30 天聚合 · 战略层</div></div>
+      <span class="flow">▸</span>
+      <div class="tbtn" data-tier="w" onclick="setTier('w')"><div class="n">周度卡</div><div class="s">7 天聚合 · 战术层</div></div>
+      <span class="flow">▸</span>
+      <div class="tbtn" data-tier="d" onclick="setTier('d')"><div class="n">日度卡</div><div class="s">24 小时实时 · 执行层</div></div>
+    </div>
+
+    <!-- ===== 月度视图 ===== -->
+    <div class="tview on" id="tv-m">
+      <div class="metrow">
+        <div class="mcell"><div class="k">目标对齐分（0-100）</div><div class="v pri">72<small> · 轻微偏航 1 次</small></div></div>
+        <div class="mcell"><div class="k">风格稳定性指数</div><div class="v">78<small> / 100</small></div></div>
+        <div class="mcell"><div class="k">本月最佳动作</div><div class="v up">+842<small> · 古今对照热点</small></div></div>
+        <div class="mcell"><div class="k">本月最差动作</div><div class="v down">-112<small> · 跨领域偏航</small></div></div>
+      </div>
+
+      <div class="tlcard" id="tl-card">
+        <div class="tl-tools">
+          <div class="lgd">
+            <span><i class="u"></i>涨（粉丝增加）</span>
+            <span><i class="d"></i>跌（粉丝减少）</span>
+            <span><i class="a"></i>无发布但异常涨跌</span>
+            <span>点击节点查看归因详情</span>
+          </div>
+        </div>
+        <div class="tl-scroll"><div class="tl" id="tl"></div></div>
+        <div class="weekchips">
+          <span class="lbl">下钻看某一周：</span>
+          <span class="wchip" onclick="setTier('w')">W1 · 8/3-8/9</span>
+          <span class="wchip" onclick="setTier('w')">W2 · 8/10-8/16</span>
+          <span class="wchip" onclick="setTier('w')">W3 · 8/17-8/23</span>
+          <span class="wchip" onclick="setTier('w')">W4 · 8/24-8/30</span>
+          <span class="wchip hot" onclick="setTier('w')">本周 · 9/7-9/13 ▸</span>
+        </div>
+        <div class="mlist">
+          <div class="mrow"><div class="mk">最有效动作 Top3</div><div class="mv">① 古今对照社会热点（均 +412/篇）② 双话题标签 ③ 数据考据合集</div></div>
+          <div class="mrow"><div class="mk">最佳 / 最差</div><div class="mv"><span class="best">《宋代外卖员》+842</span> ｜ <span class="worst">职场偏航 -112</span></div></div>
+          <div class="mrow"><div class="mk">下月方向调整</div><div class="mv"><b>砍掉跨领域（职场）内容，古今对照系列化</b>，目标对齐分 72 → 85</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 周度视图 ===== -->
+    <div class="tview" id="tv-w">
+      <div class="dayrow" id="dayrow">
+        <div class="dcell"><div class="dw">周一</div><div class="dd">09-07</div><div class="dv flat">+12</div><div class="dc">无发布<br>基线波动</div></div>
+        <div class="dcell click" onclick="setTier('d')"><div class="drilltag">点开下钻 ▸</div><div class="dw">周二</div><div class="dd">09-08</div><div class="dv up">+534</div><div class="dc">《古人近视了<br>怎么办？》Answer</div></div>
+        <div class="dcell"><div class="dw">周三</div><div class="dd">09-09</div><div class="dv flat">-8</div><div class="dc">无发布<br>基线波动</div></div>
+        <div class="dcell plan"><div class="dw">周四</div><div class="dd">09-10</div><div class="dv">计划发布</div><div class="dc">21:00 主推<br>《宋代快递员》</div></div>
+        <div class="dcell plan"><div class="dw">周五</div><div class="dd">09-11</div><div class="dv flat">—</div><div class="dc">无安排</div></div>
+        <div class="dcell plan"><div class="dw">周六</div><div class="dd">09-12</div><div class="dv">计划 Pin</div><div class="dc">图卡预告</div></div>
+        <div class="dcell plan"><div class="dw">周日</div><div class="dd">09-13</div><div class="dv">计划 Answer</div><div class="dc">储备稿</div></div>
+      </div>
+
+      <div class="wkmet">
+        <div class="mrow"><div class="mk">本周表现最好的一天</div><div class="mv"><b>周二（09-08）</b>——《古人近视了怎么办？》+534，命中「健康+历史」双话题</div></div>
+        <div class="mrow"><div class="mk">本周最有效内容类型</div><div class="mv"><b>Answer</b>（均 +534/篇）＞ Article ＞ Pin</div></div>
+        <div class="mrow"><div class="mk">撞题预警 Top3</div><div class="mv">①「古人近视」全站已 32 篇，你当前排<b>第 7</b>　②「宋代外卖」54 篇，你排第 3　③「苏轼 顶流」88 篇，<b style="color:var(--warn)">已饱和，建议绕开</b></div></div>
+        <div class="mrow"><div class="mk">下周发布节奏建议</div><div class="mv"><b>周四 21:00</b> 主推文（晚间高峰前蓄水）+ 周日轻内容；周二实测为你的强势日，可加一篇</div></div>
+      </div>
+    </div>
+
+    <!-- ===== 日度视图 ===== -->
+    <div class="tview" id="tv-d">
+      <div class="dayhead">
+        <div>
+          <div class="t">09-08 周二 ·《古人近视了怎么办？》</div>
+          <div class="z">Answer · 发布于 09:12 · 当前 22:00 · 发布后 24h 陪跑中</div>
+        </div>
+        <div class="sum">累计 +534</div>
+      </div>
+
+      <div class="h24card">
+        <div class="tl-scroll">
+          <div class="h24" id="h24"></div>
+        </div>
+      </div>
+
+      <div class="dagrid">
+        <div class="dacard">
+          <div class="dt">实时归因（涨跌 + 原因 + 可信度）</div>
+          <div class="attr-line">
+            <span class="conf hi">可信度高</span>
+            <span>「健康 + 历史」双话题标签命中推荐流，完读率高于账号均值 40%</span>
+          </div>
+          <div class="attr-line">
+            <span class="conf hi">可信度高</span>
+            <span>14:00 二次分发被触发，带来第二波 +215</span>
+          </div>
+          <div class="attr-line">
+            <span class="conf lo">可信度低</span>
+            <span>凌晨 0-8 点 +63 → 外部因素 / 平台长尾流量，不硬编原因</span>
+          </div>
+        </div>
+        <div class="dacard">
+          <div class="dt">实时下一步建议（当下决策）</div>
+          <div class="actbtns">
+            <div class="abtn" onclick="alert('追加：基于当前数据，推荐复制本篇双话题结构，48h 内发姊妹篇《古代人牙疼怎么办？》')"><b>追加</b>姊妹篇<div class="why">复制强结构</div></div>
+            <div class="abtn rec" onclick="alert('互动：20:00-22:00 晚间高峰进行中，建议 5 分钟内置顶回复 3 条高赞评论，可再吃一轮推荐')"><b>互动 ✓</b>置顶回复<div class="why">高峰进行中 · 5 分钟</div></div>
+            <div class="abtn" onclick="alert('放弃：若 23:30 增速跌破 10 粉/小时，停止投入，转入复盘即可')"><b>放弃</b>转入复盘<div class="why">设止损线</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;font-size:12px;color:var(--text-3);text-align:center">
+        ↑ 返回上级：<a style="color:var(--pri);cursor:pointer" onclick="setTier('w')">周度卡</a> ·
+        <a style="color:var(--pri);cursor:pointer" onclick="setTier('m')">月度卡</a>
+      </div>
+    </div>
+
+    <!-- 空状态兜底 -->
+    <div class="empty" id="empty" style="display:none">
+      <div class="ic">🌱</div>
+      <div class="t">还没有创作数据</div>
+      <div class="d">发布第一篇内容后，这里会自动生成你的三档轨迹。<br>演示提示：右下角「演示控制 → 正常数据」可恢复。</div>
+    </div>
+
+    <button class="nextbtn" id="nextbtn" onclick="goStep(3)">生成校准动作卡 →</button>
+  </section>
+
+  <!-- ============ 屏3 校准动作卡 ============ -->
+  <section class="screen" id="scr3">
+    <div class="scr-head">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+        <div class="scr-title">校准动作卡</div>
+        <span class="scr-tag">月 / 周 / 日 三档下一步</span>
+      </div>
+      <div class="scr-sub">每 24 小时更新 · 归因克制：不知道就标不知道</div>
+    </div>
+
+    <div class="goal2">
+      <div class="gcard">
+        <div class="gt">我的 6 个月目标</div>
+        <div class="gmain">粉丝 10,000 · 历史领域 Top10</div>
+        <div class="gsub">期限：2027-02-28（自 2026-09 起算）· 山人书房 · 垂类深耕者</div>
+        <div class="gsub" style="margin-top:14px;color:var(--text-2)">月度卡判定：<b style="color:var(--pri)">目标对齐分 72</b> · 轻微偏航（本月 1 次跨领域内容）</div>
+      </div>
+      <div class="gcard">
+        <div class="gt">现在离目标多远</div>
+        <div class="pnum">
+          <span class="pnow">5,200 <b id="pcttxt">52%</b></span>
+          <span class="ptgt">目标 <b>10,000</b></span>
+        </div>
+        <div class="pbar"><div class="pfill" id="pfill"></div></div>
+        <div class="pnote">还差 <b>4,800</b> · 近 30 天月均 +630，预计 <b>7.6 个月</b>达成——比目标慢 1.6 个月，用下面 P0/P1 动作提效可回到正轨。</div>
+      </div>
+    </div>
+
+    <div class="acts">
+      <div class="hd">
+        <div class="gt" style="margin-bottom:0">下一步建议：写哪一篇 / 做什么</div>
+        <div class="hint">日度 = 现在 · 周度 = 本周 · 月度 = 方向</div>
+      </div>
+
+      <div class="aitem">
+        <div class="abadge p0"><span class="p">P0</span><span class="l">日度·现在</span></div>
+        <div class="abody">
+          <div class="atitle">今晚 22:00 前置顶回复《古人近视》3 条高赞评论</div>
+          <div class="ameta"><span>动作：<b>互动</b></span><span>耗时：<b>5 分钟</b></span><span>窗口：<b>20:00-22:00 高峰进行中</b></span></div>
+          <div class="adesc">日度卡显示晚间高峰仍在放量，置顶互动可再吃一轮推荐分发。这是当下回报率最高的 5 分钟。</div>
+          <div class="abasis">24h 时间线显示 10:00 早班车 +186、14:00 二次分发 +215，互动行为对分发节点有正向触发。</div>
+        </div>
+      </div>
+
+      <div class="aitem">
+        <div class="abadge p1"><span class="p">P1</span><span class="l">周度·周四</span></div>
+        <div class="abody">
+          <div class="atitle">周四 21:00 发布《宋代快递员有多卷？》——「古今对照」系列第 2 篇</div>
+          <div class="ameta"><span>类型：<b>Article</b></span><span>话题：<b>#历史冷知识# #快递#</b></span><span>撞题：<b>全站 54 篇 · 空间尚可</b></span></div>
+          <div class="adesc">同结构上一篇《宋代外卖员》单篇 +842，是你的最强记录；周度卡已为你锁定周四 21:00 发布窗口。</div>
+          <div class="abasis">月度卡 Top3 动作①古今对照社会热点，均 +412/篇，为历史基线（305/篇）的 1.4 倍。</div>
+        </div>
+      </div>
+
+      <div class="aitem">
+        <div class="abadge p2"><span class="p">P2</span><span class="l">月度·方向</span></div>
+        <div class="abody">
+          <div class="atitle">砍掉跨领域（职场）内容，古今对照系列化沉淀栏目</div>
+          <div class="ameta"><span>调整：<b>目标对齐分 72 → 85</b></span><span>周期：<b>下月起</b></span></div>
+          <div class="adesc">本月唯一一次偏航是职场类 -112（偏离文史定位、取关率上升）。砍掉后风格稳定性指数预计 78 → 86。</div>
+          <div class="abasis">月度卡「最差动作」与「下月方向调整」直接推导；撞题预警显示「苏轼顶流」已饱和，新方向建议绕开。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <b>看山是山，看山不是山，看山还是山</b> · 2026 知乎黑客松校园新锐季 · 学习工具赛道<br>
+    看山播报涨跌（是山）→ 我们归因（不是山）→ 给出下一步（还是山）· Demo 数据为演示样例，接口跑通后自动替换
+  </footer>
+</div>
+
+<!-- 详情弹窗 -->
+<div class="mask" id="mask" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="xclose" onclick="closeModal()">✕</button>
+    <div class="mdate" id="m-date"></div>
+    <div class="mtitle" id="m-title"></div>
+    <div class="mconf-row" id="m-conf-row"></div>
+    <div class="mgrid">
+      <div class="mcell2"><div class="k">涨跌（粉丝）</div><div class="v" id="m-delta"></div></div>
+      <div class="mcell2"><div class="k">互动数</div><div class="v" id="m-interact"></div></div>
+      <div class="mcell2 full"><div class="k">一句话原因（归因）</div><div class="v txt" id="m-reason"></div></div>
+      <div class="mcell2 full"><div class="k">下一步建议</div><div class="v adv" id="m-advice"></div></div>
+    </div>
+    <div class="anomnote" id="m-anomnote" style="display:none"></div>
+  </div>
+</div>
+
+<!-- 演示控制台 -->
+<div class="dcon">
+  <div class="dpan" id="dpan">
+    <div class="pt2">演示控制 · 官方检查项兜底</div>
+    <button data-mode="ok" class="on">✓ 正常数据</button>
+    <button data-mode="apiError">① 接口失败</button>
+    <button data-mode="quota">② 次数用完</button>
+    <button data-mode="empty">③ 没有数据</button>
+  </div>
+  <button class="dtog" onclick="document.getElementById('dpan').classList.toggle('show')">演示控制 ▾</button>
+</div>
+
+<script>
+/* =========================================================
+ * 数据层 —— 红线：密钥/令牌一律不进前端。
+ * 真实接入时 loadData() 改为请求后端代理（后端持 OAuth 令牌）。
+ * 10 次发布 + 1 条「无发布异常涨跌」（蒋平钩子场景）
+ * ========================================================= */
+var POSTS = [
+  { date: "08-01", type: "article", title: "《红楼梦里贾母为什么不管宝玉早恋？》", delta: 320, interact: 894, conf: "hi",
+    reason: "命中「名著冷知识」热榜话题，曝光量约为日常 3 倍",
+    advice: "趁热度 48 小时内追发同系列《贾政为什么不管晴雯？》" },
+  { date: "08-05", type: "answer", title: "《唐朝人一天吃几顿饭？》", delta: 156, interact: 412, conf: "hi",
+    reason: "被「历史冷知识」圆桌收录，带来持续长尾流量",
+    advice: "申请加入该圆桌持续供稿，每周固定 1 篇" },
+  { date: "08-09", type: "pin", title: "想法｜睡前翻《西游记》发现的一个细节", delta: -45, interact: 87, conf: "mid",
+    reason: "标题偏学术化，想法流点击率低于账号均值",
+    advice: "Pin 改用疑问式短句 + 图卡先试水温" },
+  { date: "08-14", type: "article", title: "《宋代外卖员有多卷？》", delta: 842, interact: 2310, conf: "hi",
+    reason: "古今对照踩中「外卖」社会热点，双话题标签命中推荐流",
+    advice: "同一结构再写《宋代快递》，形成古今对照系列" },
+  { date: "08-20", type: "answer", title: "《职场新人该不该帮同事背锅？》", delta: -112, interact: 156, conf: "hi",
+    reason: "偏离文史定位，粉丝预期不匹配，取关率上升（跨领域偏航）",
+    advice: "职场话题并入小号/专栏，避免稀释主账号" },
+  { date: "08-25", type: "article", title: "《水浒传里的酒到底多少度？》", delta: 265, interact: 720, conf: "hi",
+    reason: "数据考据型内容被 3 位历史区大 V 转发",
+    advice: "整理成「水浒数据考据」合集，沉淀栏目 IP" },
+  { date: "08-30", type: "answer", title: "《为什么说苏轼是宋朝顶流？》", delta: 389, interact: 1105, conf: "mid",
+    reason: "疑似蹭到苏轼诞辰纪念热榜第 7 位",
+    advice: "提前储备其他文人群像选题（李白/辛弃疾）" },
+  { date: "09-03", type: "pin", title: "想法｜放一张明天要写的明朝假期小考据", delta: 98, interact: 344, conf: "mid",
+    reason: "预告型 Pin 转化一般，且发布在工作日早高峰",
+    advice: "Pin 统一改到 21:00-22:00 发布" },
+  { date: "09-04", type: "anomaly", title: "（当日无发布）", delta: 285, interact: 0, conf: "lo",
+    reason: "当天无发布动作 → 外部因素 / 平台推荐池波动，不硬编原因",
+    advice: "无需动作。持续观察 48h，若回落则确认为推荐池波动；若维持，检查是否有旧文被二次分发" },
+  { date: "09-06", type: "article", title: "《李世民玄武门之变的另一种读法》", delta: -67, interact: 201, conf: "hi",
+    reason: "观点争议大，评论区对立情绪推高弃读率",
+    advice: "24 小时内补充史料出处并置顶，压住争议" },
+  { date: "09-08", type: "answer", title: "《古人近视了怎么办？》", delta: 534, interact: 1528, conf: "hi",
+    reason: "「健康 + 历史」双话题标签命中推荐流，完读率高",
+    advice: "今晚高峰内置顶互动；48h 内发姊妹篇《古代人牙疼怎么办？》" }
+];
+var PROFILE = { name: "山人书房（演示账号）", follower: 5200, goal: 10000, monthAvg: 630 };
+var CONF = { hi: ["可信度高", "hi"], mid: ["可信度中", "mid"], lo: ["可信度低", "lo"] };
+
+/* ============ 流程控制（修复卡 loading：先解锁再跳屏） ============ */
+var curStep = 1, unlocked = 1, mode = "ok";
+function goStep(s) {
+  curStep = s;
+  var map = { 0: "scrload", 1: "scr1", 2: "scr2", 3: "scr3" };
+  document.querySelectorAll(".screen").forEach(function (x) { x.classList.remove("current"); });
+  document.getElementById(map[s]).classList.add("current");
+  if (s > unlocked) unlocked = s;
+  renderSteps();
+  if (s === 3) setTimeout(animBar, 150);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function renderSteps() {
+  document.querySelectorAll("#steps .step").forEach(function (el) {
+    var n = +el.dataset.step;
+    el.classList.toggle("active", n === curStep);
+    el.classList.toggle("done", n < unlocked && n !== curStep);
+    el.classList.toggle("disabled", n > unlocked);
+  });
+}
+document.querySelectorAll("#steps .step").forEach(function (el) {
+  el.addEventListener("click", function () { if (!el.classList.contains("disabled")) goStep(+el.dataset.step); });
+});
+
+function loadData() {
+  return new Promise(function (resolve) {
+    var msgs = ["正在通过 OAuth 读取创作数据…", "正在对齐月 / 周 / 日 三档时间轴…", "正在计算窗口基线与归因可信度…"];
+    var i = 0;
+    document.getElementById("loadtxt").textContent = msgs[0];
+    var t = setInterval(function () { i++; if (i < msgs.length) document.getElementById("loadtxt").textContent = msgs[i]; }, 450);
+    setTimeout(function () { clearInterval(t); resolve(true); }, 1450);
+  });
+}
+function startAuth() {
+  var b = document.getElementById("authbtn");
+  if (b) { b.disabled = true; b.textContent = "授权中…"; }
+  goStep(0);
+  loadData().then(function () {
+    if (b) { b.disabled = false; b.textContent = "授权知乎账号，生成我的三档轨迹"; }
+    renderMonth();
+    renderH24();
+    unlocked = 2;
+    goStep(2);
+  });
+}
+function retryLoad() { setMode("ok"); startAuth(); }
+
+/* ============ 三档切换 ============ */
+var TIER_TXT = { m: "月度卡 · 战略层", w: "周度卡 · 战术层", d: "日度卡 · 执行层" };
+function setTier(t) {
+  document.querySelectorAll(".tbtn").forEach(function (b) { b.classList.toggle("on", b.dataset.tier === t); });
+  document.querySelectorAll(".tview").forEach(function (v) { v.classList.toggle("on", v.id === "tv-" + t); });
+  document.getElementById("tier-tag").textContent = TIER_TXT[t];
+  if (t === "d") { document.getElementById("nextbtn").style.display = "none"; }
+  else { document.getElementById("nextbtn").style.display = ""; }
+}
+
+/* ============ 月度视图：时间轴 ============ */
+function dnum(d) { return parseInt(d.slice(0, 2), 10) * 31 + parseInt(d.slice(3, 5), 10); }
+function renderMonth() {
+  var el = document.getElementById("tl");
+  el.innerHTML = "";
+  var axis = document.createElement("div");
+  axis.className = "axis";
+  el.appendChild(axis);
+  var start = dnum(POSTS[0].date), end = dnum(POSTS[POSTS.length - 1].date), span = end - start;
+  var MAXD = 842;
+  document.getElementById("tl-range").textContent =
+    "2026-" + POSTS[0].date + " ~ 2026-" + POSTS[POSTS.length - 1].date + " · " + PROFILE.name + " · 10 次发布 + 1 异常点";
+
+  POSTS.forEach(function (it, idx) {
+    var x = 3 + (dnum(it.date) - start) / span * 94;
+    var up = it.delta > 0;
+    var off = it.type === "anomaly" ? 0 : -Math.max(-46, Math.min(46, it.delta / MAXD * 46));
+    var p = document.createElement("div");
+    p.className = "pt " + (it.type === "anomaly" ? "anom" : (up ? "up" : "down"));
+    p.style.left = x + "%";
+    p.style.marginTop = off + "px";
+    p.innerHTML =
+      (it.type === "anomaly" ? '<div class="badge">那天什么都没做 ▸ 点我</div>' : "") +
+      '<div class="pv">' + (up ? "+" : "") + it.delta + (it.type === "anomaly" ? " 外部" : "") + '</div>' +
+      '<div class="pd"></div>' +
+      '<div class="ptd">09月数据 · ' + it.date.slice(3) + '日</div>';
+    // 日期标签按奇偶两行防重叠
+    var d = p.querySelector(".ptd");
+    d.textContent = it.date;
+    if (idx % 2 === 1) { d.style.top = "auto"; d.style.bottom = (up ? "-30px" : "44px"); }
+    p.addEventListener("click", function () { openModal(it); });
+    el.appendChild(p);
+  });
+}
+
+/* ============ 日度视图：24h 时间线 ============ */
+function renderH24() {
+  var el = document.getElementById("h24");
+  el.innerHTML = "";
+  var nodes = [
+    { h: 9.2,  cls: "pub",  top: true,  nm: "09:12 发布", ng: "", st: "" },
+    { h: 10,   cls: "hit",  top: true,  nm: "10:00 早班车推荐", ng: "+186", st: "ok 已触发" },
+    { h: 12.5, cls: "act",  top: false, nm: "12:30 置顶观点", ng: "", st: "" },
+    { h: 14,   cls: "hit",  top: true,  nm: "14:00 二次分发", ng: "+215", st: "ok 已触发" },
+    { h: 20,   cls: "peak", top: true,  nm: "20:00 晚间高峰", ng: "+133", st: "run 进行中" },
+    { h: 22,   cls: "act",  top: false, nm: "22:00 当前", ng: "", st: "" }
+  ];
+  // 小时刻度（每 3 小时）
+  [0, 3, 6, 9, 12, 15, 18, 21, 24].forEach(function (h) {
+    var t = document.createElement("div");
+    t.className = "hour";
+    t.style.left = (h / 24 * 100) + "%";
+    t.textContent = (h < 10 ? "0" + h : h) + ":00";
+    el.appendChild(t);
+  });
+  nodes.forEach(function (n) {
+    var d = document.createElement("div");
+    d.className = "hnode " + n.cls;
+    d.style.left = (n.h / 24 * 100) + "%";
+    d.innerHTML =
+      '<div class="nd"></div>' +
+      '<div class="nt ' + (n.top ? "top" : "bot") + '">' +
+        '<div class="nm">' + n.nm + '</div>' +
+        (n.ng ? '<div class="ng ' + (n.cls === "peak" ? "wn" : "up") + '">' + n.ng + '</div>' : "") +
+        (n.st ? '<div class="st ' + n.st.split(" ")[0] + '">' + n.st + '</div>' : "") +
+      '</div>';
+    el.appendChild(d);
+  });
+  var now = document.createElement("div");
+  now.className = "now";
+  now.style.left = (22 / 24 * 100) + "%";
+  now.innerHTML = '<div class="tag">现在</div>';
+  el.appendChild(now);
+}
+
+/* ============ 弹窗（6 字段 + 可信度） ============ */
+function openModal(it) {
+  var up = it.delta > 0;
+  var anom = it.type === "anomaly";
+  document.getElementById("m-date").textContent = "2026-" + it.date + " · " + ({ article: "Article", answer: "Answer", pin: "Pin 想法", anomaly: "无发布 · 异常涨跌" }[it.type]);
+  document.getElementById("m-title").textContent = it.title;
+  document.getElementById("m-conf-row").innerHTML =
+    '<span class="conf ' + CONF[it.conf][1] + '">' + CONF[it.conf][0] + '</span>' +
+    '<span style="font-size:11px;color:var(--text-3);margin-left:6px">归因克制：没有动作就不硬编原因</span>';
+  var d = document.getElementById("m-delta");
+  d.textContent = (up ? "+" : "") + it.delta + "（" + (anom ? "外部波动" : (up ? "涨" : "跌")) + "）";
+  d.className = "v " + (anom ? "flat" : (up ? "up" : "down"));
+  document.getElementById("m-interact").textContent = anom ? "—" : it.interact.toLocaleString();
+  document.getElementById("m-reason").textContent = it.reason;
+  document.getElementById("m-advice").textContent = it.advice;
+  var note = document.getElementById("m-anomnote");
+  if (anom) {
+    note.style.display = "block";
+    note.innerHTML = "🅓 钩子场景复现：看山说「涨了 40%」，没说为什么——我们如实标注「外部因素 · 不硬编原因 · 可信度低」。这是产品价值观：敢说「不知道」。";
+  } else { note.style.display = "none"; }
+  document.getElementById("mask").classList.add("show");
+}
+function closeModal(e) {
+  if (e && e.target !== document.getElementById("mask")) return;
+  document.getElementById("mask").classList.remove("show");
+}
+document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeModal(); });
+
+/* ============ 屏3 进度条 ============ */
+function animBar() {
+  var f = document.getElementById("pfill");
+  f.style.width = "0%";
+  requestAnimationFrame(function () { f.style.width = "52%"; });
+}
+
+/* ============ 兜底（官方检查项：接口失败 / 次数用完 / 没有数据） ============ */
+var BTXT = {
+  apiError: { icon: "⚠️", text: "数据接口暂时失败，正在展示昨日缓存数据（非实时）", retry: true },
+  quota: { icon: "⏳", text: "今日数据额度已用完，展示昨日缓存", retry: false }
+};
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll("#dpan button").forEach(function (b) { b.classList.toggle("on", b.dataset.mode === m); });
+  var banner = document.getElementById("banner");
+  var show = ["tl-head", "tiernav", "tv-m", "tv-w", "tv-d", "nextbtn"].map(function (id) { return document.getElementById(id); });
+  var empty = document.getElementById("empty");
+  banner.classList.remove("show");
+  show.forEach(function (el) { if (el) el.style.display = ""; });
+  // 恢复时统一回到月度卡视图，避免 on 状态残留
+  document.getElementById("tv-m").classList.add("on");
+  document.getElementById("tv-w").classList.remove("on");
+  document.getElementById("tv-d").classList.remove("on");
+  document.querySelectorAll(".tbtn").forEach(function (b) { b.classList.toggle("on", b.dataset.tier === "m"); });
+  document.getElementById("tier-tag").textContent = TIER_TXT.m;
+  empty.style.display = "none";
+  if (m === "empty") {
+    show.forEach(function (el) { if (el) el.style.display = "none"; });
+    empty.style.display = "block";
+  } else if (m !== "ok") {
+    var c = BTXT[m];
+    document.getElementById("bicon").textContent = c.icon;
+    document.getElementById("btext").textContent = c.text;
+    document.getElementById("bretry").style.display = c.retry ? "" : "none";
+    banner.classList.add("show");
+  }
+}
+document.querySelectorAll("#dpan button").forEach(function (b) {
+  b.addEventListener("click", function () { setMode(b.dataset.mode); });
+});
+</script>
+</body>
+</html>
