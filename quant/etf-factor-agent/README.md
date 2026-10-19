@@ -6,7 +6,7 @@
 
 ## 立即查看
 
-打包内已生成 `results/demo/report.html`，双击打开即可查看。演示包含 **12 个虚拟标的、1,000 个合成工作日、6 个候选因子、7 个候选策略**。代码已在 Python 3.14.2 上实际运行，9 项单元测试通过。GitHub Actions 配置提供 Python 3.11 检查，但尚未在远端执行。
+打包内已生成 `results/demo/report.html`，双击打开即可查看。演示包含 **12 个虚拟标的、1,000 个合成工作日、6 个候选因子、7 个候选策略**。代码已在本地 Python 3.14.2 上实际运行，9 项单元测试通过；GitHub Actions 的 Python 3.11 测试与演示也已通过：[代码提交验证记录](https://github.com/CiciShi-srq/trytobehackers/actions/runs/39237965587)。
 
 全部演示标的使用 `DEMO_*` 编码，不冒充真实 ETF；日历只是周一到周五，**不是 A 股交易日历**。演示收益来自合成价格，不用于证明投资能力。
 
