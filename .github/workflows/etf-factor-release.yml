@@ -1,0 +1,49 @@
+name: ETF factor agent release
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'quant/etf-factor-agent/VERSION'
+      - '.github/workflows/etf-factor-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: etf-factor-agent-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: quant/etf-factor-agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run research and accounting tests
+        run: python -m unittest discover -s tests -v
+      - name: Generate synthetic demo and report
+        run: python agent.py demo --out results/demo
+      - name: Package and verify release
+        run: python scripts/package_release.py --out dist
+      - name: Publish tested research release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="$(cat VERSION | tr -d '\r\n')"
+          tag="etf-agent-v${version}"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release already exists: $tag (no overwrite)"
+            exit 0
+          fi
+          gh release create "$tag" \
+            "dist/etf-factor-agent-${version}.zip" "dist/SHA256SUMS" \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "ETF Factor Research Agent ${version} - Research Demo" \
+            --notes-file RELEASE_NOTES.md

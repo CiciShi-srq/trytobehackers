@@ -19,6 +19,7 @@ from pathlib import Path
 
 FACTORS = ("momentum_20", "momentum_60", "reversal_5", "low_vol_20",
            "volume_surprise_20", "trend_60")
+VERSION = "0.1.0"
 FACTOR_NOTES = {
     "momentum_20": "close[t] / close[t-20] - 1",
     "momentum_60": "close[t] / close[t-60] - 1",
@@ -36,6 +37,9 @@ def dump(path, obj):
 
 def write_csv(path, rows, fields=None):
     rows = list(rows)
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    if not rows and not fields:
+        raise ValueError("Empty CSV requires explicit field names")
     fields = fields or list(rows[0])
     with Path(path).open("w", newline="", encoding="utf-8-sig") as f:
         w = csv.DictWriter(f, fieldnames=fields)
@@ -55,6 +59,13 @@ class Config:
     seed: int = 42
 
     def validate(self):
+        for name in ("top_k", "rebalance", "warmup", "horizon", "seed"):
+            if type(getattr(self, name)) is not int:
+                raise ValueError(f"{name} must be an integer")
+        for name in ("initial_cash", "fee_bps", "slippage_bps"):
+            value = getattr(self, name)
+            if type(value) not in (int, float) or not math.isfinite(value):
+                raise ValueError(f"{name} must be a finite number")
         if self.warmup < 60 or self.horizon < 1:
             raise ValueError("warmup >=60 and horizon >=1 required")
         if self.initial_cash <= 0 or self.top_k < 3 or self.rebalance < 1:
@@ -318,7 +329,7 @@ def report(path, summary, test, bench):
     <div class="cards">{card_html}</div><h2>独立测试集净值</h2>
     <p>{summary['split']['test'][0]} → {summary['split']['test'][1]}。只展示验证集选定的策略：<code>{html.escape(summary['selected_name'])}</code>。</p>
     {svg_chart(test['equity'], bench['equity'], '独立测试集策略与基准净值')}
-    <h2>因子审计</h2><p>训练集确定正负方向；表中 IC 为原始因子方向，测试集 IC 只用于事后报告。5 期标签使用下一开盘至第 6 日开盘，跨分割边界标签剔除。</p>
+    <h2>因子审计</h2><p>训练集确定正负方向；表中 IC 为原始因子方向，测试集 IC 只用于事后报告。{summary['config']['horizon']} 期标签使用下一开盘至第 {summary['config']['horizon']+1} 日开盘，跨分割边界标签剔除。</p>
     <table><tr><th>因子</th><th>训练方向</th><th>训练 Rank IC</th><th>验证 Rank IC</th><th>测试 Rank IC</th></tr>{rows}</table>
     <h2>交易与复现</h2><p>收盘后计算信号，下一交易日开盘成交；每 {summary['config']['rebalance']} 个交易日调仓。
     单边手续费 {summary['config']['fee_bps']} bps + 滑点 {summary['config']['slippage_bps']} bps（均为研究假设）。
@@ -348,6 +359,8 @@ def research(data, out, cfg, meta_path=None):
     out.mkdir(parents=True, exist_ok=True)
     features = all_factors(panel)
     first, n = cfg.warmup+1, len(panel.dates)
+    if n-first < 4*(cfg.horizon+2):
+        raise ValueError("Too few post-warmup observations for train/valid/test and label horizon")
     train_end = first + int((n-first)*.50)
     valid_end = first + int((n-first)*.75)
     bounds = {"train": (first, train_end), "valid": (train_end, valid_end), "test": (valid_end, n)}
@@ -368,7 +381,8 @@ def research(data, out, cfg, meta_path=None):
         r["metrics"]["sharpe"] if r["metrics"]["sharpe"] is not None else -1e99,
         r["metrics"]["total_return"], r["name"]))
     source_hash = hashlib.sha256(Path(data).read_bytes()).hexdigest()
-    model = dict(version=1, selected_name=selected["name"], factors=selected["factors"],
+    model = dict(version=1, software_version=VERSION, synthetic=meta["synthetic"],
+                 selected_name=selected["name"], factors=selected["factors"],
                  directions=signs, config=asdict(cfg), symbols=panel.symbols,
                  frozen_after=panel.dates[valid_end-1], data_sha256=source_hash,
                  selection="train signed IC; validation net Sharpe; frozen before test")
@@ -410,6 +424,13 @@ def pending(panel, model, path):
     if panel.dates[-1] <= model["frozen_after"]:
         raise ValueError("Pending targets require data later than model freeze")
     cfg = Config(**model["config"])
+    cfg.validate()
+    if cfg.top_k > len(panel.symbols):
+        raise ValueError("top_k exceeds universe")
+    if not model["factors"] or any(f not in FACTORS for f in model["factors"]):
+        raise ValueError("Frozen model contains empty/unknown factors")
+    if any(model["directions"].get(f) not in (-1, 1) for f in model["factors"]):
+        raise ValueError("Frozen model directions must be +1 or -1")
     t = len(panel.dates)-1
     weights, scores = target_at({t: factor_at(panel, t)}, t, model["factors"], model["directions"],
                                 cfg.top_k, len(panel.symbols))
@@ -420,6 +441,7 @@ def pending(panel, model, path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--version", action="version", version=VERSION)
     sub = parser.add_subparsers(dest="command", required=True)
     demo = sub.add_parser("demo", help="Generate labeled synthetic data and execute the whole workflow")
     demo.add_argument("--out", default="results/demo")

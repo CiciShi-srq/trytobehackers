@@ -8,6 +8,7 @@ from pathlib import Path
 from agent import (Config, Panel, all_factors, backtest, ic_summary, make_demo,
                    ranks, rebalance_account, research)
 from scripts.fetch_etf import fetch
+from scripts.package_release import package
 
 
 class AgentTests(unittest.TestCase):
@@ -28,6 +29,47 @@ class AgentTests(unittest.TestCase):
 
     def test_tied_ranks(self):
         self.assertEqual(ranks([3, 1, 1, 4]), [2, .5, .5, 3])
+
+    def test_nonfinite_or_boolean_financial_parameters_rejected(self):
+        for field in ("initial_cash", "fee_bps", "slippage_bps"):
+            for value in (float("nan"), float("inf"), True, "3"):
+                with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                    Config(**{field: value}).validate()
+
+    def test_integer_parameters_reject_floats_and_booleans(self):
+        for field in ("top_k", "rebalance", "warmup", "horizon", "seed"):
+            for value in (3.5, True):
+                with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                    Config(**{field: value}).validate()
+
+    def test_oversized_warmup_rejected_before_split(self):
+        with self.assertRaisesRegex(ValueError, "Too few"):
+            research(self.data, self.root/"bad_warmup", Config(warmup=400))
+
+    def test_pending_rejects_unknown_factors_or_invalid_directions(self):
+        from agent import pending
+        base = dict(symbols=self.panel.symbols, frozen_after=self.panel.dates[100],
+                    config=vars(Config()), factors=["unknown"], directions={})
+        with self.assertRaisesRegex(ValueError, "unknown"):
+            pending(self.panel, base, self.root/"bad_pending.csv")
+        base.update(factors=["momentum_20"], directions={"momentum_20": 0})
+        with self.assertRaisesRegex(ValueError, "directions"):
+            pending(self.panel, base, self.root/"bad_pending.csv")
+
+    def test_custom_horizon_is_reflected_in_report(self):
+        out = self.root/"horizon_three"
+        research(self.data, out, Config(horizon=3))
+        page = (out/"report.html").read_text(encoding="utf-8")
+        self.assertIn("3 期标签使用下一开盘至第 4 日开盘", page)
+
+    def test_release_packager_refuses_real_data(self):
+        root = self.root/"unsafe_release"
+        demo = root/"results/demo"
+        demo.mkdir(parents=True)
+        (root/"VERSION").write_text("0.1.0", encoding="utf-8")
+        (demo/"summary.json").write_text('{"synthetic":false}', encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "synthetic"):
+            package(root, root/"dist")
 
     def test_cash_units_and_cost_conservation(self):
         cfg = Config(fee_bps=20, slippage_bps=30)

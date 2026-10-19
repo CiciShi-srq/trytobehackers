@@ -1,12 +1,14 @@
 # ETF 多因子研究 Agent
 
+[下载 0.1.0 研究演示版](https://github.com/CiciShi-srq/trytobehackers/releases/tag/etf-agent-v0.1.0) · [更新记录](CHANGELOG.md)
+
 面向大二学生的可复现量化研究个人项目：数据审计 → 因子计算 → 训练期定方向 → 验证期选策略 → 模型冻结 → 独立测试 → 历史交易回放 → 研究报告。
 
 这是**规则驱动、工具编排型 Research Agent**，不是接入大模型的自主交易机器人。核心完全使用 Python 标准库，无 API Key。策略是否盈利需另做真实行情验证。
 
 ## 立即查看
 
-打包内已生成 `results/demo/report.html`，双击打开即可查看。演示包含 **12 个虚拟标的、1,000 个合成工作日、6 个候选因子、7 个候选策略**。代码已在本地 Python 3.14.2 上实际运行，9 项单元测试通过；GitHub Actions 的 Python 3.11 测试与演示也已通过：[代码提交验证记录](https://github.com/CiciShi-srq/trytobehackers/actions/runs/39237965587)。
+Release ZIP 内已生成 `results/demo/report.html`，双击打开即可查看。演示包含 **12 个虚拟标的、1,000 个合成工作日、6 个候选因子、7 个候选策略**。项目包含 15 项自动化测试；发布流程先运行测试、重新生成演示并校验 ZIP，再上传版本文件。源码仓库不跟踪生成结果，需要先运行 demo 命令。
 
 全部演示标的使用 `DEMO_*` 编码，不冒充真实 ETF；日历只是周一到周五，**不是 A 股交易日历**。演示收益来自合成价格，不用于证明投资能力。
 
@@ -20,6 +22,8 @@ python -m unittest discover -s tests -v
 ```
 
 核心无需 `pip install`。运行配置位于 `config.json`。`demo` 固定使用默认配置保证复现；使用自定义参数请对生成的 CSV 执行 `research --config`。
+
+查看软件版本：`python agent.py --version`。源码用户可在生成演示后执行 `python scripts/package_release.py --out dist`，生成包含源码、中文报告、示例账本的发布 ZIP 及 `SHA256SUMS`。只打包明确列出的源码和合成演示，不包含用户真实行情或其他研究输出。
 
 ## 接入 A 股 ETF 真实历史行情
 
@@ -115,6 +119,6 @@ python agent.py pending --data data/etf_history.csv --model results/real/model.j
 
 本交付已包含 `.gitignore` 和 GitHub Actions 工作流，打包内附带的演示结果可本地查看，默认不跟踪 `results/` 与真实行情 `data/`。
 
-GitHub 交付目录为 `CiciShi-srq/trytobehackers` 的 `quant/etf-factor-agent/`，分支 `codex/etf-factor-research-agent`，以草稿 PR 供检查。远程仓库根目录 CI 对应设置项目工作目录；使用时先进入 `quant/etf-factor-agent`。ZIP 可作为独立项目运行，附带的 CI 文件按独立仓库根目录运行。
+GitHub 项目目录为 `CiciShi-srq/trytobehackers` 的 `quant/etf-factor-agent/`。使用源码时先进入该目录；Release ZIP 解压后可以直接运行。根目录 `.github/workflows/etf-factor-agent.yml` 负责检查，`etf-factor-release.yml` 在主分支版本变更时测试、生成演示、打包并发布。工作流使用 GitHub 自带的临时 `GITHUB_TOKEN`，只在发布 job 授予 `contents: write`，无需填写个人令牌。
 
 简历与面试材料见 `项目经历与答辩.md`。
