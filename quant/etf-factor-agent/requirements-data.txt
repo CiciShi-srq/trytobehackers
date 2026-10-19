@@ -1,0 +1,3 @@
+# Optional: core demo/research needs only the Python standard library.
+# API contract checked against AKShare 1.19.1 docs; live endpoint not tested here.
+akshare==1.19.1
