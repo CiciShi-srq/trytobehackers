@@ -1,0 +1,4 @@
+research/
+__pycache__/
+dist/public-sample.js
+dist/ifind-sample.js
