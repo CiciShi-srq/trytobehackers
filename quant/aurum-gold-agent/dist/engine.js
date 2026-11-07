@@ -56,7 +56,8 @@ function parseNews(text){
     const key=title.replace(/\s/g,'').toLowerCase();if(seen.has(key))continue;seen.add(key);
     const supplied=field(r,'sentiment','情绪分数','score');let score=supplied===undefined?sentiment(title):Number(supplied);
     if(!finite(score)||Math.abs(score)>1)throw Error('舆情分数必须在[-1,1]内');
-    out.push({published_at:raw,date:day,title,source:field(r,'source','来源')||'用户导入',sentiment:score,scoring:supplied===undefined?'关键词启发式':'用户给定分数'});
+    const url=field(r,'url','原文链接','link')||'';if(url&&!/^https?:\/\//i.test(url))throw Error('新闻原文链接必须是http或https地址');
+    out.push({published_at:raw,date:day,title,url,source:field(r,'source','来源')||'用户导入',sentiment:score,scoring:supplied===undefined?'关键词启发式':'用户给定分数'});
   }
   return out.sort((a,b)=>a.date.localeCompare(b.date));
 }
@@ -72,7 +73,7 @@ function corr(a,b){if(a.length<3)return null;let ma=mean(a),mb=mean(b),va=a.redu
 function featureValues(bars,daily){
  let f=Object.fromEntries(FACTOR_DEFS.map(([k])=>[k,Array(bars.length).fill(null)]));
  for(let t=0;t<bars.length;t++){let b=bars[t];f.range[t]=(b.high-b.low)/b.close;f.clv[t]=b.high===b.low?0:(2*b.close-b.high-b.low)/(b.high-b.low);
-   f.sentiment[t]=daily[t].count?daily[t].sentiment:null;f.newsAttention[t]=daily[t].count;
+   f.sentiment[t]=daily[t].count?daily[t].sentiment:null;f.newsAttention[t]=daily[t].count?daily[t].count:null;
    if(t>=5){f.mom5[t]=b.close/bars[t-5].close-1;f.reversal5[t]=-f.mom5[t];}
    if(t>=20){let returns=bars.slice(t-19,t+1).map((x,k)=>x.close/bars[t-20+k].close-1);
      f.mom20[t]=b.close/bars[t-20].close-1;f.vol20[t]=-sd(returns);
@@ -155,6 +156,7 @@ function analyze(prices,news=[],options={}){
  if(!selected.length||selected.some(k=>!values[k]))throw Error('请选择有效因子');
  let warnings=['单标的时间序列IC，不是股票横截面选股IC；约一年数据统计能力有限。','方向和标准化仅使用训练集；测试段不能反复调参后继续视为独立。','缠论是可审计的简化识别规则；末端结构会变化，不构成买卖建议。','舆情是词典/用户给分，次日才可用；不是LLM金融推理。'];
  if(!news.length)warnings.push('未导入真实舆情；舆情因子不可验证。');
+ if(news.length)warnings.push('新闻样本未证实完整覆盖：无新闻观测日的两个舆情因子保持缺失；关注度只在有观测日期检验，不能解读为全市场报道总量。');
  if(bars.some(b=>!b.amount))warnings.push('缺少成交额：Amihud分母使用close×volume近似，成交量单位会影响结果。');
  return {version:VERSION,bars,provenance:prices.provenance||{source:'内存数据，来源未独立核验',synthetic:false},factors,newsDaily:daily,selectedFactor:selected.join('+'),selectedFactors:selected,selectionAudit,split:{index,date:bars[index].date,trainEnd:bars[index-1].date},backtest:backtest(bars,values,selected,directions,index,(fee+slip)/10000),chan:chan(bars),warnings};
 }
