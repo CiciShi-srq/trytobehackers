@@ -18,4 +18,5 @@ jobs:
         with:
           node-version: '22'
       - run: node --check dist/app.js
-      - run: node --test tests/engine.test.cjs
+      - run: node --check dist/execution-ui.js
+      - run: node --test tests/*.test.cjs
